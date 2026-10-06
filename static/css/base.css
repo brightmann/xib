@@ -79,8 +79,8 @@ img { max-width: 100%; }
   position: sticky; top: 24px;
 }
 .avatar-image { width: 96px; height: 96px; border-radius: 50%; border: 3px solid #eef2ff; }
-.avatar-title { font-size: 1.15rem; margin: 12px 0 4px; }
-.avatar-intro { font-size: .88rem; color: #57606a; }
+.avatar-title { font-size: 1.15rem; margin: 12px 0 4px; color: #000; font-weight: 700; }
+.avatar-intro { font-size: .88rem; color: #000; font-weight: 700; }
 .rightbar .opera { display: none; }
 .rightbar-item { margin-top: 22px; text-align: left; }
 .rightbar-title {
@@ -91,7 +91,7 @@ img { max-width: 100%; }
 .rightbar-ul { list-style: none; }
 .rightbar-list { margin: 2px 0; }
 .rightbar-link {
-  display: block; padding: 7px 10px; border-radius: 8px; color: #424a53; font-size: .93rem;
+  display: block; padding: 7px 10px; border-radius: 8px; color: #000; font-weight: 700; font-size: .93rem;
 }
 .rightbar-link:hover { background: #eef2ff; color: #4f46e5; text-decoration: none; }
 
