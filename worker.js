@@ -5,6 +5,9 @@
  * GitHub token stays server-side (Worker secret), never exposed to clients.
  */
 
+// ---------------------------------------------------------------------------
+// Helpers (ported from controller/base.js)
+// ---------------------------------------------------------------------------
 function zeroPad(num) { return ('0' + num).slice(-2); }
 
 function formatTime(time) {
@@ -60,7 +63,7 @@ function getPage(linkHeader) {
       try {
         const u = new URL(m[2]);
         result[m[3]] = parseInt(u.searchParams.get('page')) || 1;
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
     }
   });
   return result;
@@ -73,6 +76,9 @@ function getPostList(items, linkHeader) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Templates (plain functions; ported from views/)
+// ---------------------------------------------------------------------------
 function tplHeader(siteInfo) {
   return `<header class="header" style="background-image: url(${esc(siteInfo.banner)})">
   <nav class="top"><div class="container"><a class="home" href="/">home</a></div></nav>
@@ -84,9 +90,6 @@ function tplHeader(siteInfo) {
 }
 
 function tplRightbar(ownerInfo, labelInfo, siteInfo) {
-  const labels = (labelInfo || []).map(l =>
-    `<li class="rightbar-list ${l.name === siteInfo.label ? 'active' : ''}"><a class="rightbar-link" href="/post/label/${esc(l.name)}">${esc(l.name)}</a></li>`
-  ).join('\n      ');
   const links = (siteInfo.links || []).map(l =>
     `<li class="rightbar-list"><a class="rightbar-link" href="${esc(l.url)}">${esc(l.name)}</a></li>`
   ).join('\n      ');
@@ -97,12 +100,6 @@ function tplRightbar(ownerInfo, labelInfo, siteInfo) {
     <span class="avatar-intro">${esc(ownerInfo.bio)}</span>
   </div>
   <div class="opera" id="rightbarOpera"><a class="opera-link" href="#"><i class="fa icon-reorder"></i></a></div>
-  <div class="nav rightbar-item"><h3 class="rightbar-title">LABELS</h3>
-    <ul class="rightbar-ul">
-      <li class="rightbar-list ${siteInfo.label ? '' : 'active'}"><a class="rightbar-link" href="/">home</a></li>
-      ${labels}
-    </ul>
-  </div>
   <div class="links rightbar-item"><h3 class="rightbar-title">LINKS</h3>
     <ul class="rightbar-ul">${links}</ul>
   </div>
@@ -158,6 +155,7 @@ function tplPostList(postInfo) {
 }
 
 function tplLayout(o) {
+  // o: { title, siteInfo, ownerInfo, labelInfo, headerHtml, mainHtml, headExtra, footExtra, constant }
   return `<!DOCTYPE HTML>
 <html class="theme">
 <head>
@@ -184,7 +182,9 @@ function tplLayout(o) {
 function pageHome(ctx) {
   return tplLayout({
     title: ctx.siteInfo.title,
-    siteInfo: ctx.siteInfo, ownerInfo: ctx.ownerInfo, labelInfo: ctx.labelInfo,
+    siteInfo: ctx.siteInfo,
+    ownerInfo: ctx.ownerInfo,
+    labelInfo: ctx.labelInfo,
     headerHtml: tplHeader(ctx.siteInfo),
     mainHtml: tplPostList(ctx.postInfo),
     headExtra: '<link rel="stylesheet" href="/static/css/home/index.css" type="text/css">',
@@ -199,7 +199,9 @@ function pagePostDetail(ctx) {
 </div>`;
   return tplLayout({
     title: `${ctx.postInfo.title} - ${ctx.siteInfo.title}`,
-    siteInfo: ctx.siteInfo, ownerInfo: ctx.ownerInfo, labelInfo: ctx.labelInfo,
+    siteInfo: ctx.siteInfo,
+    ownerInfo: ctx.ownerInfo,
+    labelInfo: ctx.labelInfo,
     headerHtml: tplPostHeader(ctx.postInfo, ctx.siteInfo),
     mainHtml: postHtml,
     headExtra: '<link rel="stylesheet" href="/static/css/post/detail.css" type="text/css">',
@@ -210,7 +212,9 @@ function pagePostDetail(ctx) {
 function pageLabel(ctx) {
   return tplLayout({
     title: ctx.siteInfo.title,
-    siteInfo: ctx.siteInfo, ownerInfo: ctx.ownerInfo, labelInfo: ctx.labelInfo,
+    siteInfo: ctx.siteInfo,
+    ownerInfo: ctx.ownerInfo,
+    labelInfo: ctx.labelInfo,
     headerHtml: tplHeader(ctx.siteInfo),
     mainHtml: tplPostList(ctx.postInfo),
     headExtra: '<link rel="stylesheet" href="/static/css/post/label.css" type="text/css">',
@@ -218,6 +222,9 @@ function pageLabel(ctx) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// GitHub API
+// ---------------------------------------------------------------------------
 async function gh(path, env, accept) {
   const headers = {
     'Accept': accept || 'application/vnd.github.v3+json',
@@ -252,6 +259,9 @@ async function getDefaultData(env) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Routes
+// ---------------------------------------------------------------------------
 async function handleHome(url, env) {
   const page = parseInt(url.searchParams.get('page')) || 1;
   const def = await getDefaultData(env);
