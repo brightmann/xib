@@ -269,7 +269,7 @@ async function getDefaultData(env) {
 async function handleHome(url, env) {
   const page = parseInt(url.searchParams.get('page')) || 1;
   const def = await getDefaultData(env);
-  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}`, env);
+  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}&per_page=5`, env);
   const postInfo = getPostList(res.body, res.headers.get('link'));
   postInfo.page.curr = page;
   postInfo.page.total = postInfo.page.last || 1;
@@ -295,7 +295,7 @@ async function handlePostDetail(id, env) {
 async function handleLabel(label, url, env) {
   const page = parseInt(url.searchParams.get('page')) || 1;
   const def = await getDefaultData(env);
-  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}&labels=${encodeURIComponent(label)}`, env);
+  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}&per_page=5&labels=${encodeURIComponent(label)}`, env);
   const postInfo = getPostList(res.body, res.headers.get('link'));
   postInfo.page.curr = page;
   postInfo.page.total = postInfo.page.last || 1;
