@@ -3,6 +3,7 @@
  * Server-side renders GitHub issues as a blog.
  * Uses plain template literals (nunjucks uses new Function(), forbidden on Workers).
  * GitHub token stays server-side (Worker secret), never exposed to clients.
+ * Auto-deploy check: pushes to master build and deploy via `npx wrangler deploy`.
  */
 
 // ---------------------------------------------------------------------------
