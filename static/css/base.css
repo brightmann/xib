@@ -61,6 +61,7 @@ img { max-width: 100%; }
 .post-list-title .post-list-link:hover { color: #4f46e5; text-decoration: none; }
 .post-list-image { height: 180px; border-radius: 8px; background-size: cover; background-position: center; margin: 12px 0; }
 .post-list-intro { color: #57606a; margin-bottom: 14px; white-space: pre-line; }
+.read-more { font-weight: 600; white-space: nowrap; }
 .post-list-opera { font-size: .85rem; color: #8b949e; }
 .post-list-opera .post-list-link { color: #57606a; font-weight: 600; }
 .post-list-page { text-align: center; margin-top: 8px; }
