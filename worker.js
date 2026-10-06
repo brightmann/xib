@@ -54,26 +54,33 @@ function getPost(post) {
   });
 }
 
-function getPage(linkHeader) {
-  const result = {};
-  if (!linkHeader) return result;
-  const re = /(<([\S]+)>)[\S\s]+"([\w]+)"/;
-  linkHeader.split(',').forEach(item => {
-    const m = item.match(re);
-    if (m && m.length === 4) {
-      try {
-        const u = new URL(m[2]);
-        result[m[3]] = parseInt(u.searchParams.get('page')) || 1;
-      } catch (e) { /* ignore */ }
-    }
-  });
-  return result;
+const PER_PAGE = 5;
+
+// GitHub's issues API now uses cursor pagination (Link header has rel="next"
+// with an `after` cursor but no rel="last"), so a single request can't tell us
+// the total page count. Fetch all open issues (capped at 500) and paginate
+// in the worker instead.
+async function fetchAllIssues(env, label) {
+  const issues = [];
+  let path = `/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&per_page=100` +
+    (label ? `&labels=${encodeURIComponent(label)}` : '');
+  for (let i = 0; i < 5 && path; i++) {
+    const res = await gh(path, env);
+    if (res.status !== 200 || !Array.isArray(res.body)) break;
+    issues.push(...res.body);
+    const link = res.headers.get('link') || '';
+    const m = link.match(/<([^>]+)>\s*;\s*rel="next"/);
+    path = m ? m[1].replace(/^https:\/\/api\.github\.com/, '') : null;
+  }
+  return issues;
 }
 
-function getPostList(items, linkHeader) {
+function paginate(items, pageParam) {
+  const total = Math.max(1, Math.ceil(items.length / PER_PAGE));
+  const curr = Math.min(Math.max(parseInt(pageParam) || 1, 1), total);
   return {
-    page: getPage(linkHeader),
-    list: (Array.isArray(items) ? items : []).map(getPost),
+    page: { curr, total },
+    list: items.slice((curr - 1) * PER_PAGE, curr * PER_PAGE).map(getPost),
   };
 }
 
@@ -134,6 +141,27 @@ function tplPostHeader(postInfo, siteInfo) {
 </header>`;
 }
 
+function pageNav(curr, total) {
+  const nums = [...new Set([1, total, curr - 1, curr, curr + 1])]
+    .filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+  let html = '';
+  let prev = 0;
+  for (const n of nums) {
+    if (n - prev > 1) html += '<span class="page-ellipsis">...</span>';
+    html += n === curr
+      ? `<span class="page-item page-num active">${n}</span>`
+      : `<a class="page-item page-num" href="?page=${n}">${n}</a>`;
+    prev = n;
+  }
+  const prevBtn = curr > 1
+    ? `<a class="page-item page-prev" href="?page=${curr - 1}">Previous</a>`
+    : '<span class="page-item page-prev disabled">Previous</span>';
+  const nextBtn = curr < total
+    ? `<a class="page-item page-next" href="?page=${curr + 1}">Next</a>`
+    : '<span class="page-item page-next disabled">Next</span>';
+  return `<div class="post-list-page">${prevBtn}${html}${nextBtn}</div>`;
+}
+
 function tplPostList(postInfo) {
   const items = (postInfo.list || []).map(post => {
     const slider = post.query.type === 'slider'
@@ -146,15 +174,9 @@ function tplPostList(postInfo) {
     <div class="post-list-opera">${slider}<a class="post-list-opera-item post-list-link" href="${esc(post.user.html_url)}" title="post author">${esc(post.user.login)}</a> • <span class="post-list-opera-item">${esc(post.update_time)}</span> • <a class="post-list-opera-item post-list-link" href="/post/detail/${post.number}#comments" title="post comments">${post.comments} Comments</a></div>
   </article>`;
   }).join('\n  ');
-  const prev = postInfo.page.prev ? `<a class="page-item page-prev" href="?page=${postInfo.page.prev}"><i class="fa icon-angle-left"></i></a>` : '';
-  const next = postInfo.page.next ? `<a class="page-item page-next" href="?page=${postInfo.page.next}"><i class="fa icon-angle-right"></i></a>` : '';
   return `<div class="post-list">
   ${items || '<p>No posts yet.</p>'}
-  <div class="post-list-page">
-    ${prev}
-    <span class="page-item page-curr">${postInfo.page.curr} / ${postInfo.page.total}</span>
-    ${next}
-  </div>
+  ${pageNav(postInfo.page.curr, postInfo.page.total)}
 </div>`;
 }
 
@@ -267,15 +289,11 @@ async function getDefaultData(env) {
 // Routes
 // ---------------------------------------------------------------------------
 async function handleHome(url, env) {
-  const page = parseInt(url.searchParams.get('page')) || 1;
   const def = await getDefaultData(env);
-  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}&per_page=5`, env);
-  const postInfo = getPostList(res.body, res.headers.get('link'));
-  postInfo.page.curr = page;
-  postInfo.page.total = postInfo.page.last || 1;
+  const pg = paginate(await fetchAllIssues(env), url.searchParams.get('page'));
   return new Response(pageHome({
     ownerInfo: def.ownerInfo, labelInfo: def.labelInfo,
-    siteInfo: def.siteInfo, postInfo,
+    siteInfo: def.siteInfo, postInfo: pg,
   }), { headers: { 'content-type': 'text/html;charset=UTF-8' } });
 }
 
@@ -293,15 +311,11 @@ async function handlePostDetail(id, env) {
 }
 
 async function handleLabel(label, url, env) {
-  const page = parseInt(url.searchParams.get('page')) || 1;
   const def = await getDefaultData(env);
-  const res = await gh(`/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/issues?state=open&filter=created&page=${page}&per_page=5&labels=${encodeURIComponent(label)}`, env);
-  const postInfo = getPostList(res.body, res.headers.get('link'));
-  postInfo.page.curr = page;
-  postInfo.page.total = postInfo.page.last || 1;
+  const pg = paginate(await fetchAllIssues(env, label), url.searchParams.get('page'));
   return new Response(pageLabel({
     ownerInfo: def.ownerInfo, labelInfo: def.labelInfo,
-    siteInfo: Object.assign({}, def.siteInfo, { label }), postInfo,
+    siteInfo: Object.assign({}, def.siteInfo, { label }), postInfo: pg,
   }), { headers: { 'content-type': 'text/html;charset=UTF-8' } });
 }
 
