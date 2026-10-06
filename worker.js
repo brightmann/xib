@@ -142,7 +142,7 @@ function tplPostList(postInfo) {
       ? `<div class="post-list-image" style="background-image: url(${esc(post.query.image)})"></div>` : '';
     return `<article class="post-list-item">
     <h3 class="post-list-title"><a class="post-list-link" href="/post/detail/${post.number}">${esc(post.title)}</a></h3>${img}
-    <div class="post-list-intro"><a class="post-list-link" href="/post/detail/${post.number}">${esc(post.intro)}</a></div>
+    <div class="post-list-intro">${esc(post.intro)} <a class="post-list-link read-more" href="/post/detail/${post.number}">read more...</a></div>
     <div class="post-list-opera">${slider}<a class="post-list-opera-item post-list-link" href="${esc(post.user.html_url)}" title="post author">${esc(post.user.login)}</a> • <span class="post-list-opera-item">${esc(post.update_time)}</span> • <a class="post-list-opera-item post-list-link" href="/post/detail/${post.number}#comments" title="post comments">${post.comments} Comments</a></div>
   </article>`;
   }).join('\n  ');
