@@ -80,7 +80,8 @@ function getPostList(items, linkHeader) {
 // Templates (plain functions; ported from views/)
 // ---------------------------------------------------------------------------
 function tplHeader(siteInfo) {
-  return `<header class="header" style="background-image: url(${esc(siteInfo.banner)})">
+  const bg = siteInfo.banner ? ` style="background-image: url(${esc(siteInfo.banner)})"` : '';
+  return `<header class="header"${bg}>
   <nav class="top"><div class="container"><a class="home" href="/">home</a></div></nav>
   <div class="banner"><div class="container">
     <h1 class="title">${esc(siteInfo.name)}</h1>
@@ -114,10 +115,12 @@ function tplFooter(siteInfo) {
 }
 
 function tplPostHeader(postInfo, siteInfo) {
+  const banner = postInfo.query.image || siteInfo.banner;
+  const bg = banner ? ` style="background-image: url(${esc(banner)})"` : '';
   const labels = (postInfo.labels || []).map(l =>
     `<a class="label-link" href="/post/label/${esc(l.name)}">${esc(l.name)}</a>`
   ).join('');
-  return `<header class="post-header" style="background-image: url(${esc(postInfo.query.image || siteInfo.banner)})">
+  return `<header class="post-header"${bg}>
   <nav class="top"><div class="container"><a class="home" href="/">home</a></div></nav>
   <div class="banner"><div class="container">
     <h1 class="title">${esc(postInfo.title)}</h1>
