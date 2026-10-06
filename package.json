@@ -22,7 +22,7 @@
     "url": "https://github.com/xiongwilee/iblog/issues"
   },
   "homepage": "https://github.com/xiongwilee/iblog#readme",
-  "dependencies": {},
+  "dependencies": {"nunjucks": "^3.2.4"},
   "devDependencies": {
     "browser-sync": "^2.11.1",
     "event-stream": "^3.3.2",
