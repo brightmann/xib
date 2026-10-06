@@ -230,7 +230,7 @@ async function gh(path, env, accept) {
     'Accept': accept || 'application/vnd.github.v3+json',
     'User-Agent': 'xib-worker',
   };
-  if (env.GITHUB_TOKEN) headers['Authorization'] = `token ${env.GITHUB_TOKEN}`;
+  if (env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${env.GITHUB_TOKEN}`;
   const res = await fetch(`https://api.github.com${path}`, { headers });
   const body = await res.json().catch(() => ({}));
   return { status: res.status, headers: res.headers, body };
@@ -310,6 +310,14 @@ export default {
     if (m) return handlePostDetail(m[1], env);
     m = path.match(/^\/post\/label\/([^/]+)$/);
     if (m) return handleLabel(decodeURIComponent(m[1]), url, env);
+    // Static files: wrangler.jsonc serves ./static as the assets directory,
+    // so strip the /static prefix and serve from the ASSETS binding.
+    if (path === '/static' || path.startsWith('/static/')) {
+      const assetUrl = new URL(request.url);
+      assetUrl.pathname = path.replace(/^\/static/, '') || '/';
+      const res = await env.ASSETS.fetch(new Request(assetUrl, request));
+      if (res.status !== 404) return res;
+    }
     return new Response('Not found', { status: 404 });
   },
 };
