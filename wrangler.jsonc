@@ -1,1 +1,1 @@
-{"$schema":"node_modules/wrangler/config-schema.json","assets":{"directory":"./static","binding":"ASSETS"},"compatibility_date":"2026-09-01","main":"worker.js","name":"xib"}
+{"$schema":"node_modules/wrangler/config-schema.json","assets":{"directory":"./static","binding":"ASSETS"},"compatibility_date":"2026-09-01","main":"worker.js","name":"xib","vars":{"GITHUB_OWNER":"brightmann","GITHUB_REPO":"xib","SITE_NAME":"Brite","SITE_TITLE":"Brite's Blog","SITE_INTRO":"Thoughts and notes"}}
